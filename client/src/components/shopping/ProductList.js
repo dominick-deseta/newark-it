@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Button, Form, Badge } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Card, Row, Col, Button, Form, Badge, Alert } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../auth/AuthContext';
+import { formatPrice } from '../utils/utilities';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [filter, setFilter] = useState({
     category: '',
     minPrice: '',
@@ -14,11 +17,23 @@ const ProductList = () => {
     searchTerm: ''
   });
   
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:3001/api/products');
+        
+        // Build query parameters for filtering
+        const params = new URLSearchParams();
+        if (filter.category) params.append('type', filter.category);
+        if (filter.minPrice) params.append('minPrice', filter.minPrice);
+        if (filter.maxPrice) params.append('maxPrice', filter.maxPrice);
+        if (filter.searchTerm) params.append('search', filter.searchTerm);
+        
+        // Fetch products from the backend API
+        const response = await axios.get(`http://localhost:3001/api/products?${params.toString()}`);
         setProducts(response.data);
         setError('');
       } catch (err) {
@@ -30,7 +45,7 @@ const ProductList = () => {
     };
     
     fetchProducts();
-  }, []);
+  }, [filter]); // Re-fetch when filters change
   
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -40,53 +55,62 @@ const ProductList = () => {
     }));
   };
   
-  const filteredProducts = products.filter(product => {
-    // Filter by category
-    if (filter.category && product.PType !== filter.category) {
-      return false;
-    }
-    
-    // Filter by price range
-    if (filter.minPrice && product.PPrice < parseFloat(filter.minPrice)) {
-      return false;
-    }
-    if (filter.maxPrice && product.PPrice > parseFloat(filter.maxPrice)) {
-      return false;
-    }
-    
-    // Filter by search term
-    if (filter.searchTerm && 
-        !product.PName.toLowerCase().includes(filter.searchTerm.toLowerCase()) &&
-        !product.PDescription.toLowerCase().includes(filter.searchTerm.toLowerCase())) {
-      return false;
-    }
-    
-    return true;
-  });
-  
   const addToBasket = async (productId) => {
     try {
-      // In a real app, you would call an API to add the product to the basket
-      console.log(`Adding product ${productId} to basket`);
-      // Implementation depends on your backend API and authentication system
+      if (!isAuthenticated) {
+        // Redirect to login if user is not authenticated
+        navigate('/login');
+        return;
+      }
+      
+      // Add the product to the basket via API
+      await axios.post('http://localhost:3001/api/basket/items', {
+        productId,
+        quantity: 1 // Default quantity
+      });
+      
+      // Show success message
+      setSuccessMessage(`Product added to your basket!`);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
     } catch (err) {
       console.error('Error adding to basket:', err);
+      setError('Failed to add product to basket. Please try again.');
+      
+      // Clear error message after 3 seconds
+      setTimeout(() => {
+        setError('');
+      }, 3000);
     }
   };
+  
+  // Get unique categories from the product data
+  const uniqueCategories = [...new Set(products.map(product => product.PType))];
   
   if (loading) {
     return <div className="text-center my-5">Loading products...</div>;
   }
   
-  if (error) {
-    return <div className="alert alert-danger my-3">{error}</div>;
-  }
-  
-  const uniqueCategories = [...new Set(products.map(product => product.PType))];
-  
   return (
     <div>
       <h2 className="mb-4">Products</h2>
+      
+      {/* Display success message */}
+      {successMessage && (
+        <Alert variant="success" onClose={() => setSuccessMessage('')} dismissible>
+          {successMessage}
+        </Alert>
+      )}
+      
+      {/* Display error message */}
+      {error && (
+        <Alert variant="danger" onClose={() => setError('')} dismissible>
+          {error}
+        </Alert>
+      )}
       
       {/* Filters */}
       <Card className="mb-4">
@@ -154,19 +178,33 @@ const ProductList = () => {
       </Card>
       
       {/* Product List */}
-      {filteredProducts.length === 0 ? (
+      {products.length === 0 ? (
         <div className="alert alert-info">No products match your filters.</div>
       ) : (
         <Row>
-          {filteredProducts.map(product => (
+          {products.map(product => (
             <Col key={product.PID} lg={4} md={6} sm={12} className="mb-4">
               <Card className="h-100">
                 <Card.Body>
                   <Card.Title>{product.PName}</Card.Title>
                   <Badge bg="secondary" className="mb-2">{product.PType}</Badge>
-                  <Card.Text className="mb-2">
-                    ${typeof product.PPrice === 'number' ? product.PPrice.toFixed(2) : '0.00'}
-                  </Card.Text>
+                  
+                  {product.OnOffer ? (
+                    <div className="mb-2">
+                      <span className="text-decoration-line-through text-muted me-2">
+                        ${formatPrice(product.PPrice)}
+                      </span>
+                      <span className="fw-bold text-danger">
+                        ${formatPrice(product.OfferPrice)}
+                      </span>
+                      <Badge bg="success" className="ms-2">Special Offer</Badge>
+                    </div>
+                  ) : (
+                    <Card.Text className="mb-2">
+                      ${formatPrice(product.PPrice)}
+                    </Card.Text>
+                  )}
+                  
                   <Card.Text className="text-truncate mb-3">
                     {product.PDescription}
                   </Card.Text>

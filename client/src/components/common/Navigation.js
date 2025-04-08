@@ -13,9 +13,9 @@ const Navigation = () => {
     navigate('/');
   };
   
-  // Check if user is admin (for demonstration, we'll consider gold and platinum users as admins)
-  const isAdmin = isAuthenticated && user && ['gold', 'platinum'].includes(user.status);
-  
+  // Check if user is admin (admin status not implemented yet, so really just a user)
+  const isAdmin = isAuthenticated && user;
+
   return (
     <Navbar bg="dark" variant="dark" expand="lg">
       <Container>

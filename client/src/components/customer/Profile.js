@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, Form, Button, Row, Col, Alert, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../auth/AuthContext';
+import { formatPrice } from '../utils/utilities';
 
 const CustomerProfile = () => {
+  const { user } = useAuth();
+  
   const [profile, setProfile] = useState({
     firstName: '',
     lastName: '',
@@ -24,18 +28,18 @@ const CustomerProfile = () => {
       try {
         setLoading(true);
         
-        // In a real app, you would fetch from your API
-        // const response = await axios.get('http://localhost:3001/api/customers/profile');
+        // Fetch the user's profile from the backend
+        const response = await axios.get('http://localhost:3001/api/customers/profile');
         
-        // Mock data for development
+        // Transform the response data to match our component state structure
         setProfile({
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@example.com',
-          address: '123 Main St, New York, NY 10001',
-          phone: '(555) 123-4567',
-          status: 'gold',
-          creditLine: 500.00
+          firstName: response.data.firstName,
+          lastName: response.data.lastName,
+          email: response.data.email,
+          address: response.data.address,
+          phone: response.data.phone,
+          status: response.data.status,
+          creditLine: response.data.creditLine
         });
         
         setError('');
@@ -62,13 +66,13 @@ const CustomerProfile = () => {
     e.preventDefault();
     
     try {
-      // In a real app, you would call your API
-      // await axios.put('http://localhost:3001/api/customers/profile', {
-      //   firstName: profile.firstName,
-      //   lastName: profile.lastName,
-      //   address: profile.address,
-      //   phone: profile.phone
-      // });
+      // Update the user's profile in the backend
+      await axios.put('http://localhost:3001/api/customers/profile', {
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        address: profile.address,
+        phone: profile.phone
+      });
       
       setSuccess('Profile updated successfully!');
       setIsEditing(false);
@@ -223,7 +227,7 @@ const CustomerProfile = () => {
               {profile.creditLine !== null && (
                 <Row className="mb-2">
                   <Col md={3} className="fw-bold">Credit Line:</Col>
-                  <Col md={9}>${profile.creditLine.toFixed(2)}</Col>
+                  <Col md={9}>${formatPrice(profile.creditLine)}</Col>
                 </Row>
               )}
             </div>

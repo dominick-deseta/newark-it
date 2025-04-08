@@ -69,8 +69,8 @@ exports.loginCustomer = async (req, res) => {
     }
     
     const customer = customers[0];
-    console.log(customer);
-    // In a real app, verify password against stored hash    
+    // console.log(customer);
+    // Verify password against stored hash    
     const isMatch = await bcrypt.compare(password, customer.CPassword);
 
     

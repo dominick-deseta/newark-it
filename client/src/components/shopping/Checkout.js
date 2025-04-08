@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Form, Button, Row, Col, ListGroup, Alert } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../auth/AuthContext';
+import { formatPrice } from '../utils/utilities';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const [basketItems, setBasketItems] = useState([]);
+  const { isAuthenticated } = useAuth();
+  
+  const [basket, setBasket] = useState({ basketId: null, items: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -28,58 +32,47 @@ const Checkout = () => {
     saveNewCard: false
   });
   
-  // Fetch basket items, saved addresses and credit cards
+  // Fetch necessary data
   useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    
     const fetchCheckoutData = async () => {
       try {
         setLoading(true);
         
-        // In a real app, you would fetch these from your API
-        // const basketResponse = await axios.get('http://localhost:3001/api/basket');
-        // const addressesResponse = await axios.get('http://localhost:3001/api/shipping-addresses');
-        // const cardsResponse = await axios.get('http://localhost:3001/api/credit-cards');
+        // Fetch basket
+        const basketResponse = await axios.get('http://localhost:3001/api/basket');
+        setBasket(basketResponse.data);
         
-        // Mock data for development
-        setBasketItems([
-          {
-            PID: 1,
-            PName: 'Dell XPS 13',
-            PType: 'laptop',
-            PPrice: 1299.99,
-            Quantity: 1,
-            PriceSold: 1299.99
-          },
-          {
-            PID: 3,
-            PName: 'HP LaserJet Pro',
-            PType: 'printer',
-            PPrice: 349.99,
-            Quantity: 2,
-            PriceSold: 349.99
-          }
-        ]);
+        // Fetch shipping addresses
+        const addressesResponse = await axios.get('http://localhost:3001/api/customers/shipping-addresses');
+        setShippingAddresses(addressesResponse.data);
         
-        setShippingAddresses([
-          { id: '1', name: 'Home', recipientName: 'John Doe', fullAddress: '123 Main St, New York, NY 10001' },
-          { id: '2', name: 'Office', recipientName: 'John Doe', fullAddress: '456 Business Ave, Newark, NJ 07102' }
-        ]);
+        // Fetch credit cards
+        const cardsResponse = await axios.get('http://localhost:3001/api/customers/credit-cards');
+        setSavedCreditCards(cardsResponse.data);
         
-        setSavedCreditCards([
-          { id: '1', last4: '4242', cardType: 'Visa', expiryDate: '12/25' },
-          { id: '2', last4: '1234', cardType: 'Mastercard', expiryDate: '08/26' }
-        ]);
-        
-        if (shippingAddresses.length > 0) {
+        // Set default values for form if data is available
+        if (addressesResponse.data.length > 0) {
           setFormData(prev => ({
             ...prev,
-            shippingAddressId: shippingAddresses[0].id
+            shippingAddressId: addressesResponse.data[0].id
           }));
         }
         
-        if (savedCreditCards.length > 0) {
+        if (cardsResponse.data.length > 0) {
           setFormData(prev => ({
             ...prev,
-            savedCardId: savedCreditCards[0].id
+            savedCardId: cardsResponse.data[0].id
+          }));
+        } else {
+          // If no saved cards, default to new card
+          setFormData(prev => ({
+            ...prev,
+            paymentMethod: 'new'
           }));
         }
         
@@ -93,7 +86,7 @@ const Checkout = () => {
     };
     
     fetchCheckoutData();
-  }, []);
+  }, [isAuthenticated, navigate]);
   
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -120,32 +113,31 @@ const Checkout = () => {
     }
   };
   
-  const calculateTotal = () => {
-    return basketItems.reduce((total, item) => {
-      return total + (item.PriceSold * item.Quantity);
-    }, 0);
-  };
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
-      // In a real app, you would submit the order to your API
-      // const response = await axios.post('http://localhost:3001/api/transactions', {
-      //   shippingAddressId: formData.shippingAddressId,
-      //   paymentMethod: formData.paymentMethod,
-      //   savedCardId: formData.savedCardId,
-      //   newCard: formData.paymentMethod === 'new' ? formData.newCard : undefined,
-      //   saveNewCard: formData.saveNewCard
-      // });
+      // Prepare transaction data
+      const transactionData = {
+        shippingAddressId: formData.shippingAddressId,
+        paymentMethod: formData.paymentMethod,
+        savedCardId: formData.paymentMethod === 'saved' ? formData.savedCardId : null,
+        newCard: formData.paymentMethod === 'new' ? {
+          cardNumber: formData.newCard.cardNumber,
+          securityCode: formData.newCard.securityCode,
+          ownerName: formData.newCard.ownerName,
+          cardType: formData.newCard.cardType,
+          billingAddress: formData.newCard.billingAddress,
+          expiryDate: formData.newCard.expiryDate,
+          saveCard: formData.saveNewCard
+        } : null
+      };
       
-      console.log('Order submitted:', formData);
+      // Submit the order to the backend
+      await axios.post('http://localhost:3001/api/transactions', transactionData);
       
       // Show success message
       setSuccess(true);
-      
-      // Clear basket (in a real app)
-      // await axios.delete('http://localhost:3001/api/basket');
       
       // Redirect to order confirmation after a delay
       setTimeout(() => {
@@ -157,14 +149,24 @@ const Checkout = () => {
     }
   };
   
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Alert variant="warning">Please log in to proceed with checkout.</Alert>;
+  }
+  
   if (loading) {
     return <div className="text-center my-5">Loading checkout information...</div>;
   }
   
-  if (basketItems.length === 0 && !loading) {
+  if (basket.items?.length === 0) {
     return (
       <Alert variant="warning">
         Your basket is empty. Please add items to your basket before checkout.
+        <div className="mt-3">
+          <Button as={Link} to="/products" variant="primary">
+            Browse Products
+          </Button>
+        </div>
       </Alert>
     );
   }
@@ -180,7 +182,7 @@ const Checkout = () => {
       )}
       
       {error && (
-        <Alert variant="danger">
+        <Alert variant="danger" onClose={() => setError('')} dismissible>
           {error}
         </Alert>
       )}
@@ -194,6 +196,11 @@ const Checkout = () => {
               {shippingAddresses.length === 0 ? (
                 <Alert variant="info">
                   You don't have any saved shipping addresses. Please add one to continue.
+                  <div className="mt-3">
+                    <Button as={Link} to="/profile/shipping-address" variant="primary">
+                      Add Shipping Address
+                    </Button>
+                  </div>
                 </Alert>
               ) : (
                 <Form.Group className="mb-3">
@@ -205,7 +212,7 @@ const Checkout = () => {
                   >
                     {shippingAddresses.map(address => (
                       <option key={address.id} value={address.id}>
-                        {address.name} - {address.recipientName}, {address.fullAddress}
+                        {address.name} - {address.recipientName}, {address.streetNumber} {address.street}, {address.city}, {address.state} {address.zipCode}
                       </option>
                     ))}
                   </Form.Select>
@@ -214,7 +221,7 @@ const Checkout = () => {
               
               <div className="text-end">
                 <Button variant="outline-primary" size="sm" onClick={() => navigate('/profile/shipping-address')}>
-                  Add New Address
+                  Manage Addresses
                 </Button>
               </div>
             </Card.Body>
@@ -245,7 +252,7 @@ const Checkout = () => {
                   >
                     {savedCreditCards.map(card => (
                       <option key={card.id} value={card.id}>
-                        {card.cardType} ending in {card.last4} (Expires: {card.expiryDate})
+                        {card.cardType} ending in {card.cardNumber.slice(-4)} (Expires: {card.expiryDate})
                       </option>
                     ))}
                   </Form.Select>
@@ -367,19 +374,19 @@ const Checkout = () => {
               <Card.Title>Order Summary</Card.Title>
               
               <ListGroup variant="flush" className="mb-3">
-                {basketItems.map(item => (
+                {basket.items?.map(item => (
                   <ListGroup.Item key={item.PID} className="d-flex justify-content-between">
                     <div>
                       <div>{item.PName}</div>
                       <small className="text-muted">Qty: {item.Quantity}</small>
                     </div>
-                    <div>${(item.PriceSold * item.Quantity).toFixed(2)}</div>
+                    <div>${formatPrice(item.PriceSold * item.Quantity)}</div>
                   </ListGroup.Item>
                 ))}
                 
                 <ListGroup.Item className="d-flex justify-content-between fw-bold">
                   <div>Total</div>
-                  <div>${calculateTotal().toFixed(2)}</div>
+                  <div>${formatPrice(basket.total)}</div>
                 </ListGroup.Item>
               </ListGroup>
               
@@ -391,7 +398,8 @@ const Checkout = () => {
                 disabled={
                   (formData.paymentMethod === 'saved' && !formData.savedCardId) ||
                   !formData.shippingAddressId ||
-                  success
+                  success ||
+                  shippingAddresses.length === 0
                 }
               >
                 Place Order

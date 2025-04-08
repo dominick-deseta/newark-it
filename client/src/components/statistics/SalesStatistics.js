@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Form, Button, Row, Col, Tabs, Tab, Alert } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../auth/AuthContext';
+import { formatPrice, formatDate } from '../utils/utilities';
 
 const SalesStatistics = () => {
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('creditCards');
@@ -21,6 +27,26 @@ const SalesStatistics = () => {
   const [basketTotals, setBasketTotals] = useState([]);
   const [productTypeAvg, setProductTypeAvg] = useState([]);
   
+  useEffect(() => {
+    // Check if user is authorized to view statistics (only gold and platinum users)
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    
+    // if (user does not have priveleges to view) {
+    //   navigate('/');
+    //   return;
+    // }
+    
+    // Load initial data based on active tab
+    if (activeTab === 'creditCards') {
+      fetchCreditCardStats();
+    } else if (activeTab === 'bestCustomers') {
+      fetchBestCustomers();
+    }
+  }, [isAuthenticated, user, navigate, activeTab]);
+  
   const handleDateChange = (e) => {
     const { name, value } = e.target;
     setDateRange(prev => ({
@@ -32,15 +58,10 @@ const SalesStatistics = () => {
   const fetchCreditCardStats = async () => {
     try {
       setLoading(true);
-      // In a real app, you would fetch from your API
-      // const response = await axios.get('http://localhost:3001/api/statistics/credit-cards');
       
-      // Mock data for development
-      setCreditCardStats([
-        { cardNumber: '****1234', cardType: 'Visa', totalAmount: 5299.97 },
-        { cardNumber: '****5678', cardType: 'Mastercard', totalAmount: 3499.95 },
-        { cardNumber: '****9012', cardType: 'Amex', totalAmount: 2199.98 }
-      ]);
+      // Fetch credit card statistics from the backend
+      const response = await axios.get('http://localhost:3001/api/statistics/credit-cards');
+      setCreditCardStats(response.data);
       
       setError('');
     } catch (err) {
@@ -54,22 +75,10 @@ const SalesStatistics = () => {
   const fetchBestCustomers = async () => {
     try {
       setLoading(true);
-      // In a real app, you would fetch from your API
-      // const response = await axios.get('http://localhost:3001/api/statistics/best-customers');
       
-      // Mock data for development
-      setBestCustomers([
-        { id: 1, name: 'John Smith', email: 'john@example.com', totalSpent: 7999.95, orderCount: 12 },
-        { id: 2, name: 'Emily Johnson', email: 'emily@example.com', totalSpent: 5499.90, orderCount: 8 },
-        { id: 3, name: 'Michael Brown', email: 'michael@example.com', totalSpent: 4299.97, orderCount: 7 },
-        { id: 4, name: 'Sarah Wilson', email: 'sarah@example.com', totalSpent: 3799.80, orderCount: 5 },
-        { id: 5, name: 'David Lee', email: 'david@example.com', totalSpent: 2899.95, orderCount: 4 },
-        { id: 6, name: 'Jessica Chen', email: 'jessica@example.com', totalSpent: 2599.99, orderCount: 3 },
-        { id: 7, name: 'Kevin Wang', email: 'kevin@example.com', totalSpent: 1999.97, orderCount: 2 },
-        { id: 8, name: 'Jennifer Martinez', email: 'jennifer@example.com', totalSpent: 1799.99, orderCount: 2 },
-        { id: 9, name: 'Daniel Garcia', email: 'daniel@example.com', totalSpent: 1499.95, orderCount: 1 },
-        { id: 10, name: 'Laura Taylor', email: 'laura@example.com', totalSpent: 1299.99, orderCount: 1 }
-      ]);
+      // Fetch best customers from the backend
+      const response = await axios.get('http://localhost:3001/api/statistics/best-customers');
+      setBestCustomers(response.data);
       
       setError('');
     } catch (err) {
@@ -89,41 +98,24 @@ const SalesStatistics = () => {
     try {
       setLoading(true);
       
-      // In a real app, you would fetch from your API with date params
-      // const params = {
-      //   startDate: dateRange.startDate,
-      //   endDate: dateRange.endDate
-      // };
+      // Prepare query params
+      const params = {
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      };
       
-      // const topProductsResponse = await axios.get('http://localhost:3001/api/statistics/top-products', { params });
-      // const popularProductsResponse = await axios.get('http://localhost:3001/api/statistics/popular-products', { params });
-      // const basketTotalsResponse = await axios.get('http://localhost:3001/api/statistics/basket-totals', { params });
-      // const productTypeAvgResponse = await axios.get('http://localhost:3001/api/statistics/product-type-avg', { params });
-      
-      // Mock data for development
-      setTopProducts([
-        { pid: 1, name: 'Dell XPS 13', type: 'laptop', quantity: 45, revenue: 58499.55 },
-        { pid: 3, name: 'HP LaserJet Pro', type: 'printer', quantity: 38, revenue: 13299.62 },
-        { pid: 2, name: 'Apple MacBook Pro', type: 'laptop', quantity: 32, revenue: 63999.68 }
+      // Fetch all date-range-based statistics in parallel
+      const [topProductsResponse, popularProductsResponse, basketTotalsResponse, productTypeAvgResponse] = await Promise.all([
+        axios.get('http://localhost:3001/api/statistics/top-products', { params }),
+        axios.get('http://localhost:3001/api/statistics/popular-products', { params }),
+        axios.get('http://localhost:3001/api/statistics/basket-totals', { params }),
+        axios.get('http://localhost:3001/api/statistics/product-type-avg', { params })
       ]);
       
-      setPopularProducts([
-        { pid: 1, name: 'Dell XPS 13', type: 'laptop', distinctCustomers: 42 },
-        { pid: 5, name: 'Logitech MX Master', type: 'accessory', distinctCustomers: 37 },
-        { pid: 3, name: 'HP LaserJet Pro', type: 'printer', distinctCustomers: 32 }
-      ]);
-      
-      setBasketTotals([
-        { cardNumber: '****1234', cardType: 'Visa', maxAmount: 3499.95, date: '2023-11-15' },
-        { cardNumber: '****5678', cardType: 'Mastercard', maxAmount: 2899.90, date: '2023-11-22' },
-        { cardNumber: '****9012', cardType: 'Amex', maxAmount: 4599.97, date: '2023-11-10' }
-      ]);
-      
-      setProductTypeAvg([
-        { type: 'desktop', avgPrice: 1299.99 },
-        { type: 'laptop', avgPrice: 1799.95 },
-        { type: 'printer', avgPrice: 349.99 }
-      ]);
+      setTopProducts(topProductsResponse.data);
+      setPopularProducts(popularProductsResponse.data);
+      setBasketTotals(basketTotalsResponse.data);
+      setProductTypeAvg(productTypeAvgResponse.data);
       
       setError('');
     } catch (err) {
@@ -134,20 +126,39 @@ const SalesStatistics = () => {
     }
   };
   
-  useEffect(() => {
-    if (activeTab === 'creditCards') {
-      fetchCreditCardStats();
-    } else if (activeTab === 'bestCustomers') {
-      fetchBestCustomers();
-    }
-  }, [activeTab]);
+  // Check if user is authorized to view statistics
+  if (!isAuthenticated) {
+    return (
+      <Alert variant="warning">
+        Please log in to view sales statistics.
+        <div className="mt-3">
+          <Button onClick={() => navigate('/login')} variant="primary">
+            Login
+          </Button>
+        </div>
+      </Alert>
+    );
+  }
+  
+  // if (user && !['gold', 'platinum'].includes(user.status)) {
+  //   return (
+  //     <Alert variant="warning">
+  //       You need to have Gold or Platinum status to access sales statistics.
+  //       <div className="mt-3">
+  //         <Button onClick={() => navigate('/')} variant="primary">
+  //           Return to Home
+  //         </Button>
+  //       </div>
+  //     </Alert>
+  //   );
+  // }
   
   return (
     <div>
       <h2 className="mb-4">Sales Statistics</h2>
       
       {error && (
-        <Alert variant="danger" className="mb-4">
+        <Alert variant="danger" className="mb-4" onClose={() => setError('')} dismissible>
           {error}
         </Alert>
       )}
@@ -178,7 +189,7 @@ const SalesStatistics = () => {
                         <tr key={index}>
                           <td>{card.cardNumber}</td>
                           <td>{card.cardType}</td>
-                          <td>${card.totalAmount.toFixed(2)}</td>
+                          <td>${formatPrice(card.totalAmount)}</td>
                         </tr>
                       ))
                     ) : (
@@ -217,7 +228,7 @@ const SalesStatistics = () => {
                           <td>{index + 1}</td>
                           <td>{customer.name}</td>
                           <td>{customer.email}</td>
-                          <td>${customer.totalSpent.toFixed(2)}</td>
+                          <td>${formatPrice(customer.totalSpent)}</td>
                           <td>{customer.orderCount}</td>
                         </tr>
                       ))
@@ -299,7 +310,7 @@ const SalesStatistics = () => {
                                 <td>{product.name}</td>
                                 <td>{product.type}</td>
                                 <td>{product.quantity}</td>
-                                <td>${product.revenue.toFixed(2)}</td>
+                                <td>${formatPrice(product.revenue)}</td>
                               </tr>
                             ))
                           ) : (
@@ -366,8 +377,8 @@ const SalesStatistics = () => {
                               <tr key={index}>
                                 <td>{item.cardNumber}</td>
                                 <td>{item.cardType}</td>
-                                <td>${item.maxAmount.toFixed(2)}</td>
-                                <td>{item.date}</td>
+                                <td>${formatPrice(item.maxAmount)}</td>
+                                <td>{formatDate(item.date)}</td>
                               </tr>
                             ))
                           ) : (
@@ -397,7 +408,7 @@ const SalesStatistics = () => {
                             productTypeAvg.map((item, index) => (
                               <tr key={index}>
                                 <td>{item.type}</td>
-                                <td>${item.avgPrice.toFixed(2)}</td>
+                                <td>${formatPrice(item.avgPrice)}</td>
                               </tr>
                             ))
                           ) : (

@@ -27,34 +27,9 @@ const ShippingAddressForm = () => {
       try {
         setLoading(true);
         
-        // In a real app, you would fetch from your API
-        // const response = await axios.get('http://localhost:3001/api/shipping-addresses');
-        
-        // Mock data for development
-        setAddresses([
-          { 
-            id: '1', 
-            name: 'Home', 
-            recipientName: 'John Doe',
-            street: 'Main St',
-            streetNumber: '123',
-            city: 'New York',
-            zipCode: '10001',
-            state: 'NY',
-            country: 'USA'
-          },
-          { 
-            id: '2', 
-            name: 'Office', 
-            recipientName: 'John Doe',
-            street: 'Business Ave',
-            streetNumber: '456',
-            city: 'Newark',
-            zipCode: '07102',
-            state: 'NJ',
-            country: 'USA'
-          }
-        ]);
+        // Fetch shipping addresses from the backend
+        const response = await axios.get('http://localhost:3001/api/customers/shipping-addresses');
+        setAddresses(response.data);
         
         setError('');
       } catch (err) {
@@ -118,16 +93,22 @@ const ShippingAddressForm = () => {
     try {
       if (editing) {
         // Editing existing address
-        // In a real app, you would call your API
-        // await axios.put(`http://localhost:3001/api/shipping-addresses/${editing}`, formData);
+        await axios.put(`http://localhost:3001/api/customers/shipping-addresses/${editing}`, {
+          recipientName: formData.recipientName,
+          street: formData.street,
+          streetNumber: formData.streetNumber,
+          city: formData.city,
+          zipCode: formData.zipCode,
+          state: formData.state,
+          country: formData.country
+        });
         
         // Update state
         setAddresses(prevAddresses => 
           prevAddresses.map(address => 
             address.id === editing ? 
             {
-              id: address.id,
-              name: formData.addressName,
+              ...address,
               recipientName: formData.recipientName,
               street: formData.street,
               streetNumber: formData.streetNumber,
@@ -142,13 +123,8 @@ const ShippingAddressForm = () => {
         setSuccess('Shipping address updated successfully!');
       } else {
         // Adding new address
-        // In a real app, you would call your API
-        // const response = await axios.post('http://localhost:3001/api/shipping-addresses', formData);
-        
-        // Mock response for development
-        const newAddress = {
-          id: Date.now().toString(),
-          name: formData.addressName,
+        await axios.post('http://localhost:3001/api/customers/shipping-addresses', {
+          addressName: formData.addressName,
           recipientName: formData.recipientName,
           street: formData.street,
           streetNumber: formData.streetNumber,
@@ -156,9 +132,12 @@ const ShippingAddressForm = () => {
           zipCode: formData.zipCode,
           state: formData.state,
           country: formData.country
-        };
+        });
         
-        setAddresses(prev => [...prev, newAddress]);
+        // Fetch updated address list
+        const response = await axios.get('http://localhost:3001/api/customers/shipping-addresses');
+        setAddresses(response.data);
+        
         setSuccess('Shipping address added successfully!');
       }
       
@@ -194,8 +173,8 @@ const ShippingAddressForm = () => {
   
   const handleDelete = async (id) => {
     try {
-      // In a real app, you would call your API
-      // await axios.delete(`http://localhost:3001/api/shipping-addresses/${id}`);
+      // Delete the shipping address from the backend
+      await axios.delete(`http://localhost:3001/api/customers/shipping-addresses/${id}`);
       
       // Update state
       setAddresses(prev => prev.filter(address => address.id !== id));
@@ -319,6 +298,7 @@ const ShippingAddressForm = () => {
                       value={formData.addressName}
                       onChange={handleInputChange}
                       placeholder="e.g., Home, Office, etc."
+                      disabled={editing !== null} // Can't change address name when editing
                     />
                     <Form.Text className="text-muted">
                       This is for your reference to identify this address.

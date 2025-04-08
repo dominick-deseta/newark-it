@@ -25,28 +25,9 @@ const CreditCardForm = () => {
       try {
         setLoading(true);
         
-        // In a real app, you would fetch from your API
-        // const response = await axios.get('http://localhost:3001/api/credit-cards');
-        
-        // Mock data for development
-        setCreditCards([
-          { 
-            id: '1', 
-            cardNumber: '****4242', 
-            ownerName: 'John Doe', 
-            cardType: 'Visa', 
-            expiryDate: '12/25',
-            billingAddress: '123 Main St, New York, NY 10001'
-          },
-          { 
-            id: '2', 
-            cardNumber: '****1234', 
-            ownerName: 'John Doe', 
-            cardType: 'Mastercard', 
-            expiryDate: '08/26',
-            billingAddress: '456 Business Ave, Newark, NJ 07102'
-          }
-        ]);
+        // Fetch credit cards from the backend
+        const response = await axios.get('http://localhost:3001/api/customers/credit-cards');
+        setCreditCards(response.data);
         
         setError('');
       } catch (err) {
@@ -66,6 +47,18 @@ const CreditCardForm = () => {
       ...prev,
       [name]: value
     }));
+  };
+  
+  const resetForm = () => {
+    setFormData({
+      cardNumber: '',
+      securityCode: '',
+      ownerName: '',
+      cardType: 'Visa',
+      billingAddress: '',
+      expiryMonth: '',
+      expiryYear: ''
+    });
   };
   
   const validateForm = () => {
@@ -100,41 +93,24 @@ const CreditCardForm = () => {
     
     try {
       // Format expiry date for API
-      const expiryDate = `${formData.expiryMonth}/${formData.expiryYear}`;
+      const expiryDate = `${formData.expiryYear}-${formData.expiryMonth}-01`;
       
-      // In a real app, you would submit to your API
-      // const response = await axios.post('http://localhost:3001/api/credit-cards', {
-      //   cardNumber: formData.cardNumber,
-      //   securityCode: formData.securityCode,
-      //   ownerName: formData.ownerName,
-      //   cardType: formData.cardType,
-      //   billingAddress: formData.billingAddress,
-      //   expiryDate: expiryDate
-      // });
-      
-      // Mock response for development
-      const newCard = {
-        id: Date.now().toString(),
-        cardNumber: `****${formData.cardNumber.slice(-4)}`,
+      // Submit the form data to the backend
+      await axios.post('http://localhost:3001/api/customers/credit-cards', {
+        cardNumber: formData.cardNumber,
+        securityCode: formData.securityCode,
         ownerName: formData.ownerName,
         cardType: formData.cardType,
-        expiryDate: `${formData.expiryMonth}/${formData.expiryYear.slice(-2)}`,
-        billingAddress: formData.billingAddress
-      };
-      
-      setCreditCards(prev => [...prev, newCard]);
-      
-      // Clear form
-      setFormData({
-        cardNumber: '',
-        securityCode: '',
-        ownerName: '',
-        cardType: 'Visa',
-        billingAddress: '',
-        expiryMonth: '',
-        expiryYear: ''
+        billingAddress: formData.billingAddress,
+        expiryDate: expiryDate
       });
       
+      // Fetch the updated list of credit cards
+      const response = await axios.get('http://localhost:3001/api/customers/credit-cards');
+      setCreditCards(response.data);
+      
+      // Clear form and show success message
+      resetForm();
       setSuccess('Credit card added successfully!');
       setShowForm(false);
       setError('');
@@ -146,10 +122,10 @@ const CreditCardForm = () => {
   
   const handleDelete = async (id) => {
     try {
-      // In a real app, you would call your API
-      // await axios.delete(`http://localhost:3001/api/credit-cards/${id}`);
+      // Delete the credit card from the backend
+      await axios.delete(`http://localhost:3001/api/customers/credit-cards/${id}`);
       
-      // Update state
+      // Update state to remove the deleted card
       setCreditCards(prev => prev.filter(card => card.id !== id));
       
       setSuccess('Credit card removed successfully!');

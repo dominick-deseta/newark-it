@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge, Row, Col, ListGroup, Form, Alert } from 'react-bootstrap';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../auth/AuthContext';
+import { formatPrice } from '../utils/utilities';
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,34 +21,9 @@ const ProductDetail = () => {
       try {
         setLoading(true);
         
-        // In a real app, you would fetch from your API
-        // const response = await axios.get(`http://localhost:3001/api/products/${id}`);
-        
-        // Mock data for development based on id
-        const mockProduct = {
-          PID: parseInt(id),
-          PName: `Product ${id}`,
-          PType: ['laptop', 'desktop', 'printer'][id % 3],
-          PPrice: 999.99 + (id * 100),
-          PDescription: 'This is a high-quality product with great features. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi. Sed ut imperdiet nisi. Proin condimentum fermentum nunc.',
-          PQuantity: 10,
-          OnOffer: id % 2 === 0, // Even IDs are on offer
-          OfferPrice: 899.99 + (id * 80)
-        };
-        
-        // Add type-specific details
-        if (mockProduct.PType === 'laptop') {
-          mockProduct.CPUType = 'Intel Core i7';
-          mockProduct.BatteryType = 'Lithium-Ion';
-          mockProduct.Weight = 3.5;
-        } else if (mockProduct.PType === 'desktop') {
-          mockProduct.CPUType = 'AMD Ryzen 7';
-        } else if (mockProduct.PType === 'printer') {
-          mockProduct.PrinterType = 'Laser';
-          mockProduct.Resolution = '1200x1200 dpi';
-        }
-        
-        setProduct(mockProduct);
+        // Fetch product details from the backend
+        const response = await axios.get(`http://localhost:3001/api/products/${id}`);
+        setProduct(response.data);
         setError('');
       } catch (err) {
         console.error('Error fetching product:', err);
@@ -77,11 +57,17 @@ const ProductDetail = () => {
   
   const addToBasket = async () => {
     try {
-      // In a real app, you would call your API
-      // await axios.post('http://localhost:3001/api/basket/items', {
-      //   productId: product.PID,
-      //   quantity
-      // });
+      if (!isAuthenticated) {
+        // Redirect to login if user is not authenticated
+        navigate('/login');
+        return;
+      }
+      
+      // Call the backend API to add the product to the basket
+      await axios.post('http://localhost:3001/api/basket/items', {
+        productId: product.PID,
+        quantity
+      });
       
       // Show success message
       setAddedToBasket(true);
@@ -145,15 +131,15 @@ const ProductDetail = () => {
                 {product.OnOffer ? (
                   <>
                     <span className="text-decoration-line-through text-muted me-2">
-                      ${product.PPrice.toFixed(2)}
+                      ${formatPrice(product.PPrice)}
                     </span>
                     <span className="fs-4 fw-bold text-danger">
-                      ${product.OfferPrice.toFixed(2)}
+                      ${formatPrice(product.OfferPrice)}
                     </span>
                   </>
                 ) : (
                   <span className="fs-4 fw-bold">
-                    ${product.PPrice.toFixed(2)}
+                    ${formatPrice(product.PPrice)}
                   </span>
                 )}
               </div>
@@ -230,7 +216,7 @@ const ProductDetail = () => {
           </ListGroup.Item>
           
           {/* CPU Type for computers */}
-          {(product.PType === 'laptop' || product.PType === 'desktop') && (
+          {(product.PType === 'laptop' || product.PType === 'desktop') && product.CPUType && (
             <ListGroup.Item>
               <Row>
                 <Col md={4} className="fw-bold">CPU Type:</Col>
@@ -242,36 +228,44 @@ const ProductDetail = () => {
           {/* Laptop-specific details */}
           {product.PType === 'laptop' && (
             <>
-              <ListGroup.Item>
-                <Row>
-                  <Col md={4} className="fw-bold">Battery Type:</Col>
-                  <Col md={8}>{product.BatteryType}</Col>
-                </Row>
-              </ListGroup.Item>
-              <ListGroup.Item>
-                <Row>
-                  <Col md={4} className="fw-bold">Weight:</Col>
-                  <Col md={8}>{product.Weight} lbs</Col>
-                </Row>
-              </ListGroup.Item>
+              {product.BatteryType && (
+                <ListGroup.Item>
+                  <Row>
+                    <Col md={4} className="fw-bold">Battery Type:</Col>
+                    <Col md={8}>{product.BatteryType}</Col>
+                  </Row>
+                </ListGroup.Item>
+              )}
+              {product.Weight && (
+                <ListGroup.Item>
+                  <Row>
+                    <Col md={4} className="fw-bold">Weight:</Col>
+                    <Col md={8}>{product.Weight} lbs</Col>
+                  </Row>
+                </ListGroup.Item>
+              )}
             </>
           )}
           
           {/* Printer-specific details */}
           {product.PType === 'printer' && (
             <>
-              <ListGroup.Item>
-                <Row>
-                  <Col md={4} className="fw-bold">Printer Type:</Col>
-                  <Col md={8}>{product.PrinterType}</Col>
-                </Row>
-              </ListGroup.Item>
-              <ListGroup.Item>
-                <Row>
-                  <Col md={4} className="fw-bold">Resolution:</Col>
-                  <Col md={8}>{product.Resolution}</Col>
-                </Row>
-              </ListGroup.Item>
+              {product.PrinterType && (
+                <ListGroup.Item>
+                  <Row>
+                    <Col md={4} className="fw-bold">Printer Type:</Col>
+                    <Col md={8}>{product.PrinterType}</Col>
+                  </Row>
+                </ListGroup.Item>
+              )}
+              {product.Resolution && (
+                <ListGroup.Item>
+                  <Row>
+                    <Col md={4} className="fw-bold">Resolution:</Col>
+                    <Col md={8}>{product.Resolution}</Col>
+                  </Row>
+                </ListGroup.Item>
+              )}
             </>
           )}
         </ListGroup>
