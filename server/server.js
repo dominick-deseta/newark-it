@@ -17,6 +17,7 @@ const productRoutes = require('./routes/productRoutes');
 const basketRoutes = require('./routes/basketRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
 const statisticsRoutes = require('./routes/statisticsRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 // Use routes
 app.use('/api/customers', customerRoutes);
@@ -24,6 +25,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/basket', basketRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/statistics', statisticsRoutes);
+app.use('/api/auth', authRoutes);
 
 // Root route
 app.get('/', (req, res) => {

@@ -22,8 +22,8 @@ exports.registerCustomer = async (req, res) => {
     
     // Insert new customer
     const [result] = await pool.query(
-      'INSERT INTO CUSTOMER (FName, LName, EMail, Address, Phone) VALUES (?, ?, ?, ?, ?)',
-      [firstName, lastName, email, address, phone]
+      'INSERT INTO CUSTOMER (FName, LName, EMail, Address, Phone, CPassword) VALUES (?, ?, ?, ?, ?, ?)',
+      [firstName, lastName, email, address, phone, hashedPassword]
     );
     
     // In a real app, store the hashed password in a separate table
@@ -35,11 +35,16 @@ exports.registerCustomer = async (req, res) => {
       { expiresIn: '24h' }
     );
     
-    // Return success with token
     res.status(201).json({
       message: 'Customer registered successfully',
       token,
-      customerId: result.insertId
+      customer: {
+        id: result.insertId,
+        firstName,
+        lastName,
+        email,
+        status: 'regular' // Default status for new customers
+      }
     });
   } catch (error) {
     console.error('Error registering customer:', error);
@@ -50,6 +55,7 @@ exports.registerCustomer = async (req, res) => {
 // Login customer
 exports.loginCustomer = async (req, res) => {
   try {
+    console.log("logging in customer");
     const { email, password } = req.body;
     
     // Find customer by email
@@ -63,12 +69,10 @@ exports.loginCustomer = async (req, res) => {
     }
     
     const customer = customers[0];
-    
-    // In a real app, verify password against stored hash
-    // const isMatch = await bcrypt.compare(password, storedHashedPassword);
-    
-    // For demo, we'll assume password is correct
-    const isMatch = true;
+    console.log(customer);
+    // In a real app, verify password against stored hash    
+    const isMatch = await bcrypt.compare(password, customer.CPassword);
+
     
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });

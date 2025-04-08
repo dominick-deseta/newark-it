@@ -17,16 +17,19 @@ export const AuthProvider = ({ children }) => {
       
       if (token) {
         try {
-          // In a real app, you might want to validate the token with the server
-          // const response = await axios.get('http://localhost:3001/api/auth/validate');
-          // setUser(response.data.user);
-          
+          // Configure axios to include the token
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+          const response = await axios.get('http://localhost:3001/api/auth/validate');
+          setUser(response.data.user);
+          setIsAuthenticated(true);
+
           // For demonstration, we'll just use the stored user info
-          const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
-          if (storedUser) {
-            setUser(storedUser);
-            setIsAuthenticated(true);
-          }
+          // const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+          // if (storedUser) {
+          //   setUser(storedUser);
+          //   setIsAuthenticated(true);
+          // }
         } catch (error) {
           // If token validation fails, clear localStorage
           console.error('Auth validation error:', error);
@@ -44,32 +47,31 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (email, password) => {
     try {
-      // In a real app, call your API
-      // const response = await axios.post('http://localhost:3001/api/customers/login', {
-      //   email,
-      //   password
-      // });
+      const response = await axios.post('http://localhost:3001/api/customers/login', {
+        email,
+        password
+      });
       
       // For demonstration
-      const mockResponse = {
-        data: {
-          token: 'mock_jwt_token_would_be_here_in_real_app',
-          customer: {
-            id: 1,
-            firstName: 'John',
-            lastName: 'Doe',
-            email: email,
-            status: 'gold'
-          }
-        }
-      };
+      // const mockResponse = {
+      //   data: {
+      //     token: 'mock_jwt_token_would_be_here_in_real_app',
+      //     customer: {
+      //       id: 1,
+      //       firstName: 'John',
+      //       lastName: 'Doe',
+      //       email: email,
+      //       status: 'gold'
+      //     }
+      //   }
+      // };
       
       // Store the token and user info
-      localStorage.setItem('token', mockResponse.data.token);
-      localStorage.setItem('user', JSON.stringify(mockResponse.data.customer));
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.customer));
       
       // Update state
-      setUser(mockResponse.data.customer);
+      setUser(response.data.customer);
       setIsAuthenticated(true);
       
       return { success: true };
@@ -96,30 +98,29 @@ export const AuthProvider = ({ children }) => {
   // Register function
   const register = async (userData) => {
     try {
-      // In a real app, call your API
-      // const response = await axios.post('http://localhost:3001/api/customers', userData);
+      const response = await axios.post('http://localhost:3001/api/customers', userData);
       
       // For demonstration
-      const mockResponse = {
-        data: {
-          message: 'Registration successful',
-          token: 'mock_jwt_token_for_new_user',
-          customer: {
-            id: 2,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            email: userData.email,
-            status: 'regular'
-          }
-        }
-      };
+      // const mockResponse = {
+      //   data: {
+      //     message: 'Registration successful',
+      //     token: 'mock_jwt_token_for_new_user',
+      //     customer: {
+      //       id: 2,
+      //       firstName: userData.firstName,
+      //       lastName: userData.lastName,
+      //       email: userData.email,
+      //       status: 'regular'
+      //     }
+      //   }
+      // };
       
       // Store the token and user info
-      localStorage.setItem('token', mockResponse.data.token);
-      localStorage.setItem('user', JSON.stringify(mockResponse.data.customer));
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.customer));
       
       // Update state
-      setUser(mockResponse.data.customer);
+      setUser(response.data.customer);
       setIsAuthenticated(true);
       
       return { success: true };
