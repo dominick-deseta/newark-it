@@ -17,7 +17,7 @@ exports.registerCustomer = async (req, res) => {
       return res.status(400).json({ message: 'Email already in use' });
     }
     
-    // Hash password (in a real app)
+    // Hash password 
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // Insert new customer
@@ -25,9 +25,7 @@ exports.registerCustomer = async (req, res) => {
       'INSERT INTO CUSTOMER (FName, LName, EMail, Address, Phone, CPassword) VALUES (?, ?, ?, ?, ?, ?)',
       [firstName, lastName, email, address, phone, hashedPassword]
     );
-    
-    // In a real app, store the hashed password in a separate table
-    
+        
     // Generate JWT token
     const token = jwt.sign(
       { user: { id: result.insertId, email } },
