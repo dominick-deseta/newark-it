@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Form, Button, Alert, Container, Row, Col } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 const Login = () => {
@@ -12,7 +12,15 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const location = useLocation();
+  const { login, isAuthenticated } = useAuth();
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,7 +47,8 @@ const Login = () => {
       
       if (result.success) {
         // Navigate to the home page on successful login
-        navigate('/');
+        // Using replace instead of push to prevent going back to login page
+        navigate('/', { replace: true });
       } else {
         setError(result.message);
       }

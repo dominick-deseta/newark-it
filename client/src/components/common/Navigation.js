@@ -1,12 +1,22 @@
-
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar, Nav, Container, NavDropdown } from 'react-bootstrap';
 import { useAuth } from '../auth/AuthContext';
 
 const Navigation = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [userName, setUserName] = useState('');
+  
+  // Update userName when user state changes
+  useEffect(() => {
+    if (user) {
+      setUserName(user.firstName || 'User');
+    } else {
+      setUserName('');
+    }
+  }, [user]);
   
   const handleLogout = () => {
     logout();
@@ -49,9 +59,9 @@ const Navigation = () => {
             )}
           </Nav>
           
-          {isAuthenticated && (
+          {isAuthenticated && userName && (
             <Navbar.Text className="text-white">
-              Welcome, {user?.firstName || 'User'}
+              Welcome, {userName}
             </Navbar.Text>
           )}
         </Navbar.Collapse>

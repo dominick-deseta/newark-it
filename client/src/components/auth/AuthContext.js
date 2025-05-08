@@ -8,6 +8,15 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   
+  // Apply token to axios headers whenever it changes
+  const setAuthToken = (token) => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  };
+  
   // Check if user is logged in on initial load
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -16,17 +25,24 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           // Configure axios to include the token
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          setAuthToken(token);
 
           const response = await axios.get('http://localhost:3001/api/auth/validate');
           setUser(response.data.user);
           setIsAuthenticated(true);
         } catch (error) {
-          // If token validation fails, clear localStorage
+          // If token validation fails, clear localStorage and auth state
           console.error('Auth validation error:', error);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          setAuthToken(null);
+          setUser(null);
+          setIsAuthenticated(false);
         }
+      } else {
+        // Ensure auth state is reset if no token exists
+        setUser(null);
+        setIsAuthenticated(false);
       }
       
       setLoading(false);
@@ -43,12 +59,17 @@ export const AuthProvider = ({ children }) => {
         password
       });
       
+      const { token, customer } = response.data;
+      
       // Store the token and user info
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.customer));
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(customer));
+      
+      // Set auth token in axios headers
+      setAuthToken(token);
       
       // Update state
-      setUser(response.data.customer);
+      setUser(customer);
       setIsAuthenticated(true);
       
       return { success: true };
@@ -67,6 +88,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     
+    // Remove auth token from axios headers
+    setAuthToken(null);
+    
     // Reset state
     setUser(null);
     setIsAuthenticated(false);
@@ -77,12 +101,17 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.post('http://localhost:3001/api/customers', userData);
       
+      const { token, customer } = response.data;
+      
       // Store the token and user info
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.customer));
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(customer));
+      
+      // Set auth token in axios headers
+      setAuthToken(token);
       
       // Update state
-      setUser(response.data.customer);
+      setUser(customer);
       setIsAuthenticated(true);
       
       return { success: true };

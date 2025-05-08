@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Button, Alert, Card, Container, Row, Col } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 const Registration = () => {
-  const { register } = useAuth();
+  const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -20,6 +20,13 @@ const Registration = () => {
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -102,8 +109,8 @@ const Registration = () => {
         });
         
         if (result.success) {
-          // Navigate to home page
-          navigate('/');
+          // Navigate to home page with replace to avoid going back to registration
+          navigate('/', { replace: true });
         } else {
           setSubmitError(result.message);
         }
