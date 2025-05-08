@@ -1,10 +1,8 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
-// Create context
 const AuthContext = createContext();
 
-// Create provider component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,13 +21,6 @@ export const AuthProvider = ({ children }) => {
           const response = await axios.get('http://localhost:3001/api/auth/validate');
           setUser(response.data.user);
           setIsAuthenticated(true);
-
-          // For demonstration, we'll just use the stored user info
-          // const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
-          // if (storedUser) {
-          //   setUser(storedUser);
-          //   setIsAuthenticated(true);
-          // }
         } catch (error) {
           // If token validation fails, clear localStorage
           console.error('Auth validation error:', error);
@@ -51,20 +42,6 @@ export const AuthProvider = ({ children }) => {
         email,
         password
       });
-      
-      // For demonstration
-      // const mockResponse = {
-      //   data: {
-      //     token: 'mock_jwt_token_would_be_here_in_real_app',
-      //     customer: {
-      //       id: 1,
-      //       firstName: 'John',
-      //       lastName: 'Doe',
-      //       email: email,
-      //       status: 'gold'
-      //     }
-      //   }
-      // };
       
       // Store the token and user info
       localStorage.setItem('token', response.data.token);
@@ -99,21 +76,6 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await axios.post('http://localhost:3001/api/customers', userData);
-      
-      // For demonstration
-      // const mockResponse = {
-      //   data: {
-      //     message: 'Registration successful',
-      //     token: 'mock_jwt_token_for_new_user',
-      //     customer: {
-      //       id: 2,
-      //       firstName: userData.firstName,
-      //       lastName: userData.lastName,
-      //       email: userData.email,
-      //       status: 'regular'
-      //     }
-      //   }
-      // };
       
       // Store the token and user info
       localStorage.setItem('token', response.data.token);

@@ -62,14 +62,13 @@ const CreditCardForm = () => {
   };
   
   const validateForm = () => {
-    // Basic validation - in a real app, you would want more robust validation
     if (!formData.cardNumber || !formData.securityCode || !formData.ownerName || 
         !formData.billingAddress || !formData.expiryMonth || !formData.expiryYear) {
       setError('All fields are required');
       return false;
     }
     
-    // Card number should be 16 digits (simplified validation)
+    // Card number should be 16 digits 
     if (!/^\d{16}$/.test(formData.cardNumber)) {
       setError('Card number must be 16 digits');
       return false;

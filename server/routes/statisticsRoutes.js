@@ -4,7 +4,7 @@ const statisticsController = require('../controllers/statisticsController');
 const auth = require('../middleware/auth');
 
 // All statistics routes require authentication
-// In a real app, you would have admin middleware to restrict these to admin users only
+// In a real app, we would have admin middleware to restrict these to admin users only
 router.get('/credit-cards', auth, statisticsController.getCreditCardStats);
 router.get('/best-customers', auth, statisticsController.getBestCustomers);
 router.get('/top-products', auth, statisticsController.getTopProducts);

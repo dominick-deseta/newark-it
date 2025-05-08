@@ -1,0 +1,29 @@
+[33mcommit c2f4a2511d24e6de418d3d8c674e648520698237[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Dominick DeSeta <70176540+dominick-deseta@users.noreply.github.com>
+Date:   Tue Apr 8 01:02:53 2025 -0400
+
+    fully connected frontend and backend
+
+[33mcommit af5b4c0b20f38884d4d284f7b05fee7d962f20f6[m
+Author: Dominick DeSeta <70176540+dominick-deseta@users.noreply.github.com>
+Date:   Mon Apr 7 22:41:21 2025 -0400
+
+    added login/registration
+
+[33mcommit 815049f56ccc0fbe4ec5ba9b0dfca1505f07dba1[m
+Author: Dominick DeSeta <70176540+dominick-deseta@users.noreply.github.com>
+Date:   Mon Apr 7 15:08:48 2025 -0400
+
+    remove server's node modules
+
+[33mcommit 24abe76b99e7fc0f142fc1fce7fedaf747a01aff[m
+Author: Dominick DeSeta <70176540+dominick-deseta@users.noreply.github.com>
+Date:   Sat Apr 5 21:22:19 2025 -0400
+
+    remove nod_modules from git tracking
+
+[33mcommit 3acaefc3ae0d87099aee508e08e5a74b8a605a5e[m
+Author: Dominick DeSeta <70176540+dominick-deseta@users.noreply.github.com>
+Date:   Sat Apr 5 21:08:24 2025 -0400
+
+    Initial Commit
